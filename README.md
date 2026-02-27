@@ -24,6 +24,7 @@ SLACK_APP_TOKEN=xapp-your-app-token
 
 ### 3. 起動
 ```bash
-pip install -r requirements.txt
-python app.py
+pip install uv
+uv sync
+uv run python app.py
 ```

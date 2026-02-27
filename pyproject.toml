@@ -1,0 +1,10 @@
+[project]
+name = "slack-mac-controller"
+version = "0.1.0"
+description = "スマホ（Slack）から自宅のMacに指示を送り、ローカルコマンドを操作・実行するためのツール。"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "python-dotenv",
+    "slack-bolt",
+]
