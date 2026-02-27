@@ -1,11 +1,16 @@
 # Slack GeminiCli Controller
 
-スマホ（Slack）から自宅のMacに指示を送り、ローカルコマンド（`antigravity` や `gemini` CLIなど）を操作・実行するためのツールです。
+スマホ（Slack）から自宅のMacの環境で `gemini` CLIを実行し、ローカル環境でAIからの回答を受け取るためのツールです。
 SlackのSocket Modeを利用するため、Macのポート開放なしでセキュアに通信できます。
 
 ## 概要
 
-Slack上でBot宛てにメンション付きでメッセージを送るか、特定のコマンドを送信すると、Mac上で対応する処理が実行され、結果がSlackに返ってきます。
+Slack上でBot宛てにメンション付きでメッセージを送ると、その内容がそのままプロンプトとしてローカルの Gemini CLI に送信され、結果がSlackに返ってきます。
+
+### 対象リポジトリの指定
+複数のリポジトリを操作したい場合は、メッセージの先頭に `in <リポジトリ名>` を付けることで実行ディレクトリを切り替えられます。
+*   例: `@bot in MyApp index.htmlの背景色を赤に変えて`
+*   デフォルトの検索ベースディレクトリは `~/Desktop/develop` です（`.env`の `TARGET_BASE_DIR` で変更可能）。
 
 ## セットアップ
 
@@ -20,10 +25,12 @@ Slack上でBot宛てにメンション付きでメッセージを送るか、特
 ```
 SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_APP_TOKEN=xapp-your-app-token
+TARGET_BASE_DIR=~/Desktop/develop  # 任意（対象リポジトリのベースディレクトリ）
 ```
 
 ### 3. 起動
 ```bash
-pip install -r requirements.txt
-python app.py
+pip install uv
+uv sync
+uv run python app.py
 ```

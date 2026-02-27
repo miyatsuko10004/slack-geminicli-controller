@@ -8,54 +8,57 @@ load_dotenv()
 
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
-def run_command(cmd_str):
+def run_command(cmd_str, cwd=None):
     try:
         # NOTE: In production, consider security implications. Use shlex/safe command parsing if accepting user input.
-        result = subprocess.run(cmd_str, shell=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd_str, shell=True, capture_output=True, text=True, timeout=30, cwd=cwd)
         output = result.stdout if result.stdout else result.stderr
         return output if output else "✅ 実行完了（出力なし）"
     except Exception as e:
-        return f"❌ エラーが発生しました: {str(e)}"
+        return f"❌ エラーが発生しました: {str(e)}\n\n(cwd: {cwd})"
 
 @app.event("app_mention")
 def handle_app_mentions(event, say):
     text = event.get("text", "")
     
-    if "antigravity" in text:
-        say("🚀 antigravityを実行します...")
-        out = run_command("python3 -c 'import antigravity'")
-        say(f"結果:\\n```\\n{out}\\n```")
+    # Extract the prompt. If the user just mentions the bot, the whole text (minus the mention) is the prompt.
+    # The text usually looks like "<@U12345678> hello gemini", so we strip out the mention.
+    import re
+    # Remove user mentions like <@U0123ABCD>
+    prompt = re.sub(r'<@U[A-Z0-9]+>', '', text).strip()
     
-    elif "gemini" in text:
-        # Example: @bot gemini summarize this
-        # Extracts everything after 'gemini '
-        prompt = text.split("gemini", 1)[-1].strip()
-        if not prompt:
-            say("geminiコマンドの後にプロンプトを入力してください。")
+    if not prompt:
+        say("プロンプトを入力してください。\n例: `@bot in MyApp 背景色を赤に変えて`")
+        return
+        
+    # Check for "in <repo>" format
+    target_dir = None
+    target_repo = None
+    
+    # Match "in <repo> <prompt>"
+    match = re.match(r'^in\s+([^\s]+)\s+(.+)$', prompt, re.IGNORECASE)
+    if match:
+        target_repo = match.group(1)
+        prompt = match.group(2).strip()
+        
+        # Determine base directory
+        base_dir = os.environ.get("TARGET_BASE_DIR", os.path.expanduser("~/Desktop/develop"))
+        target_dir = os.path.join(base_dir, target_repo)
+        
+        # Validate directory exists
+        if not os.path.isdir(target_dir):
+            say(f"❌ リポジトリディレクトリが見つかりません: `{target_dir}`")
             return
             
-        say(f"🤖 Gemini CLIに問い合わせ中...\\nプロンプト: `{prompt}`")
-        # Run gemini cli with the prompt securely
-        import shlex
-        safe_prompt = shlex.quote(prompt)
-        out = run_command(f'gemini {safe_prompt}')
-        say(f"結果:\\n```\\n{out}\\n```")
-        
-    elif "system" in text:
-        subcommand = text.split("system", 1)[-1].strip()
-        if subcommand == "info":
-            say("📊 Macのシステム情報を取得中...")
-            out = run_command("top -l 1 -n 0 | head -n 10")
-            say(f"システム情報:\\n```\\n{out}\\n```")
-        elif subcommand == "sleep":
-            say("💤 Macをスリープ状態にします...")
-            run_command("pmset sleepnow")
-            say("スリープコマンドを実行しました。")
-        else:
-            say("不明なsystemサブコマンドです。利用可能なサブコマンド: `info`, `sleep`")
-            
+        say(f"📂 リポジトリ `{target_repo}` でGemini CLIに問い合わせ中...\\nプロンプト: `{prompt}`")
     else:
-        say("利用可能なコマンド: `antigravity`, `gemini <prompt>`, `system <info|sleep>`")
+        say(f"🤖 (デフォルトディレクトリ) Gemini CLIに問い合わせ中...\\nプロンプト: `{prompt}`")
+    
+    # Run gemini cli with the prompt securely
+    import shlex
+    safe_prompt = shlex.quote(prompt)
+    out = run_command(f'gemini {safe_prompt}', cwd=target_dir)
+    say(f"結果:\\n```\\n{out}\\n```")
 
 if __name__ == "__main__":
     app_token = os.environ.get("SLACK_APP_TOKEN")
