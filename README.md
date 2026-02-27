@@ -1,4 +1,4 @@
-# Slack Mac Controller
+# Slack GeminiCli Controller
 
 スマホ（Slack）から自宅のMacに指示を送り、ローカルコマンド（`antigravity` や `gemini` CLIなど）を操作・実行するためのツールです。
 SlackのSocket Modeを利用するため、Macのポート開放なしでセキュアに通信できます。
